@@ -9,7 +9,8 @@ const PASSPORT_VC_SECRETS_ARN = `${process.env["PASSPORT_VC_SECRETS_ARN"]}`;
 
 const route53Domain = `${process.env["ROUTE_53_DOMAIN"]}`;
 const route53Zone = `${process.env["ROUTE_53_ZONE"]}`;
-const dockerGtcPassportIamImage = `${process.env["DOCKER_GTC_PASSPORT_IAM_IMAGE"]}`;
+
+export const dockerScrollServiceImage = `${process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""}`;
 
 const stack = pulumi.getStack();
 const region = aws.getRegion({});
@@ -122,6 +123,7 @@ const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service`, {
 
 const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
   listenerArn: albHttpsListenerArn,
+  priority: 1,
   actions: [
     {
       type: "forward",
@@ -133,7 +135,11 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
       hostHeader: {
         values: [route53Domain],
       },
-      // pathPattern: {[]}
+    },
+    {
+      pathPattern: {
+        values: ["/scroll*"],
+      },
     },
   ],
   tags: {
@@ -145,12 +151,12 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
 //////////////////////////////////////////////////////////////
 // ECS Task & Service
 //////////////////////////////////////////////////////////////
-const taskDefinition = new aws.ecs.TaskDefinition(`passport-iam`, {
-  family: `passport-iam`,
+const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service`, {
+  family: `scroll-badge-service`,
   containerDefinitions: JSON.stringify([
     {
-      name: "iam",
-      image: dockerGtcPassportIamImage,
+      name: "scroll-badge-service",
+      image: dockerScrollServiceImage,
       cpu: 512,
       memory: 1024,
       links: [],
