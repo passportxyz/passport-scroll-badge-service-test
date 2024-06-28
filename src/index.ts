@@ -17,9 +17,6 @@ const port = 3003;
 if (!process.env.SCROLL_EAS_SCAN_URL) {
   console.error("Missing SCROLL_EAS_SCAN_URL environment variable");
 }
-if (!process.env.SCROLL_BADGE_SCHEMA_UID) {
-  console.error("Missing SCROLL_BADGE_SCHEMA_UID environment variable");
-}
 if (!process.env.ATTESTATION_SIGNER_PRIVATE_KEY) {
   console.error("Missing ATTESTATION_SIGNER_PRIVATE_KEY environment variable");
 }
@@ -39,7 +36,6 @@ if (!process.env.ATTESTER_PROXY_ADDRESS) {
 }
 
 const SCROLL_EAS_SCAN_URL: string = `${process.env.SCROLL_EAS_SCAN_URL}`;
-const SCROLL_BADGE_SCHEMA_UID: string = `${process.env.SCROLL_BADGE_SCHEMA_UID}`;
 const ATTESTATION_SIGNER_PRIVATE_KEY: string = `${process.env.ATTESTATION_SIGNER_PRIVATE_KEY}`;
 const PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS: string = `${process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS}`;
 const PASSPORT_SCORE_SCHEMA_UID: string = `${process.env.PASSPORT_SCORE_SCHEMA_UID}`;
@@ -183,8 +179,8 @@ export const getAttestations = async (
 
 export function parseScoreFromAttestation(
   attestations: Attestation[],
-  schemaId: string
 ): number | null {
+  const schemaId = PASSPORT_SCORE_SCHEMA_UID;
   const validAttestation = attestations.find(
     (attestation) =>
       attestation.revoked === false &&
@@ -253,8 +249,7 @@ app.get("/scroll/check", async (req: Request, res: Response): Promise<void> => {
       SCROLL_EAS_SCAN_URL
     );
     const score = parseScoreFromAttestation(
-      attestations,
-      PASSPORT_SCORE_SCHEMA_UID
+      attestations
     );
 
     const eligibility = Boolean(score && score >= 20);
@@ -290,8 +285,7 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
     SCROLL_EAS_SCAN_URL
   );
   const score = parseScoreFromAttestation(
-    attestations,
-    PASSPORT_SCORE_SCHEMA_UID
+    attestations
   );
 
   const eligibility = score && score >= 20;
@@ -319,7 +313,7 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
     const delegatedProxy = await proxy.connect(signer).getDelegated();
     const attestation = {
       // attestation data
-      schema: SCROLL_BADGE_SCHEMA_UID,
+      schema: SCROLL_BADGE_SCHEMA,
       recipient,
       data,
 
@@ -346,8 +340,6 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
       signature: signature.signature,
       deadline: attestation.deadline,
     };
-
-    // await proxy.contract.attestByDelegation(attestByDelegationInput);
 
     const tx = await proxy.contract.attestByDelegation.populateTransaction(
       attestByDelegationInput

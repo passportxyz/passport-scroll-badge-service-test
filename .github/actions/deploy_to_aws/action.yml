@@ -1,0 +1,46 @@
+name: Deploy to AWS
+inputs:
+  docker_tag:
+    description: "Commit short SHA"
+    required: true
+    type: string
+  stack_name:
+    required: true
+    type: string
+  aws_region:
+    required: true
+    type: string
+  PULUMI_ACCESS_TOKEN:
+    required: true
+  AWS_ACCESS_KEY_ID:
+    required: true
+  AWS_SECRET_ACCESS_KEY:
+    required: true
+  # TODO move these to AWS secrets manager
+  ETHERSCAN_API_KEY:
+    required: true
+  ALCHEMY_API_KEY:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - run: |
+        pulumi stack select -c ${{ inputs.stack_name }}
+        pulumi config -s ${{ inputs.stack_name }} set aws:region ${{ inputs.aws_region }} --non-interactive
+      shell: bash
+      working-directory: infra/aws
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ inputs.PULUMI_ACCESS_TOKEN }}
+    - uses: pulumi/actions@v3
+      id: pulumi
+      with:
+        command: up
+        stack-name: ${{ inputs.stack_name }}
+        upsert: false
+        work-dir: infra/aws
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ inputs.PULUMI_ACCESS_TOKEN }}
+        AWS_ACCESS_KEY_ID: ${{ inputs.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ inputs.aws_region }}

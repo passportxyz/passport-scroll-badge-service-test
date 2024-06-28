@@ -1,0 +1,13 @@
+{
+  "name": "passport-scroll-badge-service",
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^18",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.113.0",
+    "@pulumi/aws": "^6.0.2",
+    "@pulumi/awsx": "^1.0.5"
+  }
+}
