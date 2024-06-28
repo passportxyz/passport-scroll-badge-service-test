@@ -39,6 +39,10 @@ on:
         required: false
       AWS_SECRET_ACCESS_KEY_PRODUCTION:
         required: false
+      IAM_SERVER_SSM_ARN_PRODUCTION:
+        required: false
+      IAM_SERVER_SSM_ARN_STAGING:
+        required: false
 
 jobs:
   ref:

@@ -10,10 +10,12 @@ on:
     secrets:
       PULUMI_ACCESS_TOKEN:
         required: true
-      AWS_ACCESS_KEY_ID_REVIEW:
+      AWS_ACCESS_KEY_ID_PRODUCTION:
         required: true
-      AWS_SECRET_ACCESS_KEY_REVIEW:
+      AWS_SECRET_ACCESS_KEY_PRODUCTION:
         required: true
+      IAM_SERVER_SSM_ARN_PRODUCTION:
+          required: true
 
 jobs:
   deploy:
