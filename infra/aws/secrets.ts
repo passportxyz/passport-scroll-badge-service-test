@@ -1,7 +1,7 @@
-export const getIamSecrets = (PASSPORT_VC_SECRETS_ARN: string, IAM_SERVER_SSM_ARN: string) => [
+export const getIamSecrets = (IAM_SERVER_SSM_ARN: string) => [
   {
-    name: "RPC_URL",
-    valueFrom: `${IAM_SERVER_SSM_ARN}:RPC_URL::`,
+    name: "SCROLL_RPC_URL",
+    valueFrom: `${IAM_SERVER_SSM_ARN}:SCROLL_RPC_URL::`,
   },
   {
     name: "SCROLL_EAS_SCAN_URL",

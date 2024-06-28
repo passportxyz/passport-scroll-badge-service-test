@@ -28,8 +28,8 @@ if (!process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS) {
 if (!process.env.PASSPORT_SCORE_SCHEMA_UID) {
   console.error("Missing PASSPORT_SCORE_SCHEMA_UID environment variable");
 }
-if (!process.env.RPC_URL) {
-  console.error("Missing RPC_URL environment variable");
+if (!process.env.SCROLL_RPC_URL) {
+  console.error("Missing SCROLL_RPC_URL environment variable");
 }
 if (!process.env.ATTESTER_PROXY_ADDRESS) {
   console.error("Missing ATTESTER_PROXY_ADDRESS environment variable");
@@ -39,7 +39,7 @@ const SCROLL_EAS_SCAN_URL: string = `${process.env.SCROLL_EAS_SCAN_URL}`;
 const ATTESTATION_SIGNER_PRIVATE_KEY: string = `${process.env.ATTESTATION_SIGNER_PRIVATE_KEY}`;
 const PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS: string = `${process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS}`;
 const PASSPORT_SCORE_SCHEMA_UID: string = `${process.env.PASSPORT_SCORE_SCHEMA_UID}`;
-const RPC_URL: string = `${process.env.RPC_URL}`;
+const SCROLL_RPC_URL: string = `${process.env.SCROLL_RPC_URL}`;
 const ATTESTER_PROXY_ADDRESS: string = `${process.env.ATTESTER_PROXY_ADDRESS}`;
 
 const SCROLL_BADGE_SCHEMA = "address badge, bytes payload";
@@ -126,7 +126,7 @@ export class ProviderExternalVerificationError extends ProviderVerificationError
   }
 }
 
-const provider = new JsonRpcProvider(RPC_URL);
+const provider = new JsonRpcProvider(SCROLL_RPC_URL);
 const signer = new Wallet(ATTESTATION_SIGNER_PRIVATE_KEY, provider);
 
 export const handleProviderAxiosError = (

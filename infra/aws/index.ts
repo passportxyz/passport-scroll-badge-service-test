@@ -5,7 +5,6 @@ import * as awsx from "@pulumi/awsx";
 import { getIamSecrets } from "./secrets";
 
 const IAM_SERVER_SSM_ARN = `${process.env["IAM_SERVER_SSM_ARN"]}`;
-const PASSPORT_VC_SECRETS_ARN = `${process.env["PASSPORT_VC_SECRETS_ARN"]}`;
 
 const route53Domain = `${process.env["ROUTE_53_DOMAIN"]}`;
 const route53Zone = `${process.env["ROUTE_53_ZONE"]}`;
@@ -188,7 +187,7 @@ const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service`, {
           "awslogs-stream-prefix": "iam",
         },
       },
-      secrets: getIamSecrets(PASSPORT_VC_SECRETS_ARN, IAM_SERVER_SSM_ARN),
+      secrets: getIamSecrets(IAM_SERVER_SSM_ARN),
       mountPoints: [],
       volumesFrom: [],
     }
