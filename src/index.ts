@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { Request, Response } from "express";
 import axios from "axios";
 import {
@@ -6,7 +7,7 @@ import {
   NO_EXPIRATION,
 } from "@ethereum-attestation-service/eas-sdk";
 import { EIP712Proxy } from "@ethereum-attestation-service/eas-sdk/dist/eip712-proxy.js";
-import { Wallet } from "ethers";
+import { Wallet, JsonRpcProvider } from "ethers";
 
 const app = express();
 const port = 3003;
@@ -14,24 +15,36 @@ const port = 3003;
 if (!process.env.SCROLL_EAS_SCAN_URL) {
   console.error("Missing SCROLL_EAS_SCAN_URL environment variable");
 }
-
 if (!process.env.SCROLL_BADGE_SCHEMA_UID) {
   console.error("Missing SCROLL_BADGE_SCHEMA_UID environment variable");
-}
-if (!process.env.SCROLL_BADGE_SCHEMA) {
-  console.error("Missing SCROLL_BADGE_SCHEMA environment variable");
 }
 if (!process.env.ATTESTATION_SIGNER_PRIVATE_KEY) {
   console.error("Missing ATTESTATION_SIGNER_PRIVATE_KEY environment variable");
 }
+if (!process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS) {
+  console.error(
+    "Missing PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS environment variable"
+  );
+}
+if (!process.env.PASSPORT_SCORE_SCHEMA_UID) {
+  console.error("Missing PASSPORT_SCORE_SCHEMA_UID environment variable");
+}
+if (!process.env.RPC_URL) {
+  console.error("Missing RPC_URL environment variable");
+}
+if (!process.env.ATTESTER_PROXY_ADDRESS) {
+  console.error("Missing ATTESTER_PROXY_ADDRESS environment variable");
+}
+
 const SCROLL_EAS_SCAN_URL: string = `${process.env.SCROLL_EAS_SCAN_URL}`;
 const SCROLL_BADGE_SCHEMA_UID: string = `${process.env.SCROLL_BADGE_SCHEMA_UID}`;
-const SCROLL_BADGE_SCHEMA: string = `${process.env.SCROLL_BADGE_SCHEMA}`; // TODO: This should probebly be hardcoded ...
 const ATTESTATION_SIGNER_PRIVATE_KEY: string = `${process.env.ATTESTATION_SIGNER_PRIVATE_KEY}`;
-const SCROLL_CHAIN_ID: string = "0x82750";
-// Wallet to use for mainnets
-// Only functional in production (set to same as testnet for non-production environments)
-const attestationSignerWallet = new Wallet(ATTESTATION_SIGNER_PRIVATE_KEY);
+const PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS: string = `${process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS}`;
+const PASSPORT_SCORE_SCHEMA_UID: string = `${process.env.PASSPORT_SCORE_SCHEMA_UID}`;
+const RPC_URL: string = `${process.env.RPC_URL}`;
+const ATTESTER_PROXY_ADDRESS: string = `${process.env.ATTESTER_PROXY_ADDRESS}`;
+
+const SCROLL_BADGE_SCHEMA = "address badge, bytes payload";
 
 export type Attestation = {
   recipient: string;
@@ -115,9 +128,8 @@ export class ProviderExternalVerificationError extends ProviderVerificationError
   }
 }
 
-export const getAttestationSignerForChain = async (): Promise<Wallet> => {
-  return attestationSignerWallet;
-};
+const provider = new JsonRpcProvider(RPC_URL);
+const signer = new Wallet(ATTESTATION_SIGNER_PRIVATE_KEY, provider);
 
 export const handleProviderAxiosError = (
   error: any,
@@ -235,12 +247,12 @@ app.get("/scroll/check", async (req: Request, res: Response): Promise<void> => {
   try {
     const attestations = await getAttestations(
       recipient,
-      badge,
+      PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS,
       SCROLL_EAS_SCAN_URL
     );
     const score = parseScoreFromAttestation(
       attestations,
-      SCROLL_BADGE_SCHEMA_UID
+      PASSPORT_SCORE_SCHEMA_UID
     );
 
     const eligibility = Boolean(score && score >= 20);
@@ -272,12 +284,12 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
 
   const attestations = await getAttestations(
     recipient,
-    badge,
+    PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS,
     SCROLL_EAS_SCAN_URL
   );
   const score = parseScoreFromAttestation(
     attestations,
-    SCROLL_BADGE_SCHEMA_UID
+    PASSPORT_SCORE_SCHEMA_UID
   );
 
   const eligibility = score && score >= 20;
@@ -291,7 +303,7 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
     });
 
   try {
-    const proxy = new EIP712Proxy(badge);
+    const proxy = new EIP712Proxy(ATTESTER_PROXY_ADDRESS);
 
     const encoder = new SchemaEncoder(SCROLL_BADGE_SCHEMA);
     const data = encoder.encodeData([
@@ -301,8 +313,6 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
 
     const currentTime = Math.floor(new Date().getTime() / 1000);
     const deadline = currentTime + 3600;
-
-    const signer = await getAttestationSignerForChain();
 
     const delegatedProxy = await proxy.connect(signer).getDelegated();
     const attestation = {
@@ -334,21 +344,13 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
       signature: signature.signature,
       deadline: attestation.deadline,
     };
-    // const res = await attesterProxy.connect(claimer).attestByDelegationProxy(badge);
-    // proxy.connect(signer).attestByDelegationProxy(
-    //   {
-    //       schema: process.env.SCROLL_BADGE_SCHEMA_UID,
-    //       data,
-    //       attester: attestation.attester,
-    //       signature: signature.signature,
-    //       deadline: attestation.deadline,
-    //     }
-    // )
+
+    // await proxy.contract.attestByDelegation(attestByDelegationInput);
 
     const tx = await proxy.contract.attestByDelegation.populateTransaction(
       attestByDelegationInput
     );
-    // const tx = await proxy.contract.populateTransaction.attestByDelegation(attestByDelegationInput);
+
     return void res.json({ code: 1, message: "success", tx });
   } catch (e) {
     console.error("Error claiming badge:", e);
