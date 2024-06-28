@@ -16,6 +16,8 @@ on:
         required: true
       IAM_SERVER_SSM_ARN_PRODUCTION:
           required: true
+      ROUTE53_ZONE_ID_PRODUCTION:
+        required: true
 
 jobs:
   deploy:

@@ -43,6 +43,10 @@ on:
         required: false
       IAM_SERVER_SSM_ARN_STAGING:
         required: false
+      ROUTE_53_ZONE_PRODUCTION:
+        required: false
+      ROUTE_53_ZONE_STAGING:
+        required: false
 
 jobs:
   ref:
@@ -176,21 +180,23 @@ jobs:
         if: ${{ inputs.deploy_staging }}
         with:
           docker_tag: ${{ needs.docker.outputs.docker_tag }}
-          stack_name: gitcoin/staging
+          stack_name: gitcoin/passport-scroll-badge-service/staging
           aws_region: us-west-2
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          ROUTE53_ZONE_ID: ${{ secrets.ROUTE53_ZONE_ID_STAGING }}
       - name: Deploy Production
         uses: ./.github/actions/deploy_to_aws
         if: ${{ inputs.deploy_production }}
         with:
           docker_tag: ${{ needs.docker.outputs.docker_tag }}
-          stack_name: gitcoin/production
+          stack_name: gitcoin/passport-scroll-badge-service/production
           aws_region: us-west-2
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PRODUCTION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PRODUCTION }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          ROUTE53_ZONE_ID: ${{ secrets.ROUTE53_ZONE_ID_PRODUCTION }}
   release:
     needs: [deploy_backends, test_and_draft_release, ref]
     if: ${{ inputs.create_release }}

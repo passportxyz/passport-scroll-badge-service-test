@@ -7,7 +7,6 @@ import { getIamSecrets } from "./secrets";
 const IAM_SERVER_SSM_ARN = `${process.env["IAM_SERVER_SSM_ARN"]}`;
 
 const route53Domain = `${process.env["ROUTE_53_DOMAIN"]}`;
-const route53Zone = `${process.env["ROUTE_53_ZONE"]}`;
 
 export const dockerScrollServiceImage = `${process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""}`;
 

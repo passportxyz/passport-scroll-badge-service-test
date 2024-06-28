@@ -16,6 +16,8 @@ on:
         required: true
       IAM_SERVER_SSM_ARN_STAGING:
         required: true
+      ROUTE53_ZONE_ID_STAGING:
+        required: true
 
 jobs:
   deploy:
