@@ -8,8 +8,10 @@ import {
 } from "@ethereum-attestation-service/eas-sdk";
 import { EIP712Proxy } from "@ethereum-attestation-service/eas-sdk/dist/eip712-proxy.js";
 import { Wallet, JsonRpcProvider } from "ethers";
+import cors from "cors";
 
 const app = express();
+app.use(cors());
 const port = 3003;
 
 if (!process.env.SCROLL_EAS_SCAN_URL) {
