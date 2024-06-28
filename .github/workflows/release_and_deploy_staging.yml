@@ -10,9 +10,9 @@ on:
     secrets:
       PULUMI_ACCESS_TOKEN:
         required: true
-      AWS_ACCESS_KEY_ID_REVIEW:
+      AWS_ACCESS_KEY_ID_STAGING:
         required: true
-      AWS_SECRET_ACCESS_KEY_REVIEW:
+      AWS_SECRET_ACCESS_KEY_STAGING:
         required: true
 
 jobs:
