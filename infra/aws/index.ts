@@ -1,6 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
 
 import { getIamSecrets } from "./secrets";
 
@@ -43,8 +42,8 @@ const vpcPrivateSubnets = coreInfraStack.getOutput("privateSubnetIds");
 // Service SG
 //////////////////////////////////////////////////////////////
 
-const serviceSG = new aws.ec2.SecurityGroup(`scroll-badge-service`, {
-  name: `scroll-badge-service`,
+const serviceSG = new aws.ec2.SecurityGroup(`scroll-badge-service-sg`, {
+  name: `scroll-badge-service-sg`,
   vpcId: vpcId,
   description: `Security Group for scroll-badge-service service.`,
   tags: {
@@ -52,11 +51,13 @@ const serviceSG = new aws.ec2.SecurityGroup(`scroll-badge-service`, {
     Name: `scroll-badge-service`,
   },
 });
+
+
 // do no group the security group definition & rules in the same resource =>
 // it will cause the sg to be destroyed and recreated everytime the rules change
 // By managing them separately is easier to update the security group rules even outside of this stack
 const sgIngressRule80 = new aws.ec2.SecurityGroupRule(
-  `scroll-badge-service`,
+  `scroll-badge-service-sgr`,
   {
     securityGroupId: serviceSG.id,
     type: "ingress",
@@ -69,6 +70,7 @@ const sgIngressRule80 = new aws.ec2.SecurityGroupRule(
     dependsOn: [serviceSG],
   }
 );
+
 
 // Allow all outbound traffic
 const sgEgressRule = new aws.ec2.SecurityGroupRule(
@@ -90,8 +92,8 @@ const sgEgressRule = new aws.ec2.SecurityGroupRule(
 // Load Balancer listerner rule & target group
 //////////////////////////////////////////////////////////////
 
-const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service`, {
-  name: `scroll-badge-service`,
+const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service-tg`, {
+  name: `scroll-badge-service-tg`,
   vpcId: vpcId,
   healthCheck: {
     enabled: true,
@@ -115,13 +117,15 @@ const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service`, {
   targetType: "ip",
   tags: {
     ...defaultTags,
-    Name: `scroll-badge-service`,
+    Name: `scroll-badge-service-tg`,
   },
 });
 
+
+export const listnerearn = albHttpsListenerArn
 const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
   listenerArn: albHttpsListenerArn,
-  priority: 1,
+  priority: 10,
   actions: [
     {
       type: "forward",
@@ -149,11 +153,11 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
 //////////////////////////////////////////////////////////////
 // ECS Task & Service
 //////////////////////////////////////////////////////////////
-const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service`, {
-  family: `scroll-badge-service`,
+const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service-td`, {
+  family: `scroll-badge-service-td`,
   containerDefinitions: JSON.stringify([
     {
-      name: "scroll-badge-service",
+      name: "scroll-badge-service-td",
       image: dockerScrollServiceImage,
       cpu: 512,
       memory: 1024,
@@ -198,7 +202,7 @@ const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service`, {
   requiresCompatibilities: ["FARGATE"],
   tags: {
     ...defaultTags,
-    EcsService: `passport-iam`,
+    EcsService: `scroll-badge-service`,
   },
 });
 
@@ -217,7 +221,7 @@ const service = new aws.ecs.Service(
         targetGroupArn: albTargetGroup.arn,
       },
     ],
-    name: `passport-iam`,
+    name: `scroll-badge-service`,
     networkConfiguration: {
       subnets: vpcPrivateSubnets,
       securityGroups: [serviceSG.id],
@@ -226,7 +230,7 @@ const service = new aws.ecs.Service(
     taskDefinition: taskDefinition.arn,
     tags: {
       ...defaultTags,
-      Name: `passport-iam`,
+      Name: `scroll-badge-service`,
     },
   },
   {
