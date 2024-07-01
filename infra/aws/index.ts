@@ -3,10 +3,10 @@ import * as aws from "@pulumi/aws";
 
 import { getIamSecrets } from "./secrets";
 
-const SCROLL_SECRETS_ARN = `${process.env["SCROLL_SECRETS_ARN"]}`;
-const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
+export const SCROLL_SECRETS_ARN = `${process.env["SCROLL_SECRETS_ARN"]}`;
+export const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
 
-const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
+export const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
 
 export const dockerScrollServiceImage = `${
   process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""

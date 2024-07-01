@@ -16,12 +16,12 @@ inputs:
     required: true
   AWS_SECRET_ACCESS_KEY:
     required: true
-  # TODO move these to AWS secrets manager
-  ETHERSCAN_API_KEY:
+  ROUTE_53_DOMAIN:
     required: true
-  ALCHEMY_API_KEY:
+  SCROLL_SECRETS_ARN:
     required: true
-
+  VC_SECRETS_ARN:
+    required: true
 runs:
   using: composite
   steps:
@@ -35,7 +35,7 @@ runs:
     - uses: pulumi/actions@v3
       id: pulumi
       with:
-        command: up
+        command: preview
         stack-name: ${{ inputs.stack_name }}
         upsert: false
         work-dir: infra/aws
@@ -45,3 +45,6 @@ runs:
         AWS_SECRET_ACCESS_KEY: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: ${{ inputs.aws_region }}
         SCROLL_BADGE_SERVICE_IMAGE_TAG: ${{ inputs.docker_tag }}
+        ROUTE_53_DOMAIN: ${{ inputs.ROUTE_53_DOMAIN }}
+        SCROLL_SECRETS_ARN: ${{ inputs.SCROLL_SECRETS_ARN }}
+        VC_SECRETS_ARN: ${{ inputs.VC_SECRETS_ARN }}
