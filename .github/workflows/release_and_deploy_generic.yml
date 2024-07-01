@@ -46,8 +46,6 @@ on:
         required: false
       ROUTE_53_ZONE_STAGING:
         required: false
-      ROUTE_53_ZONE_REVIEW:
-        required: true
 
 jobs:
   ref:
