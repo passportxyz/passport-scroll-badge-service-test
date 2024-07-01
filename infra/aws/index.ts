@@ -198,77 +198,83 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
 //////////////////////////////////////////////////////////////
 // ECS Task & Service
 //////////////////////////////////////////////////////////////
-const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service-td`, {
-  family: `scroll-badge-service-td`,
-  containerDefinitions: JSON.stringify([
-    {
-      name: "scroll-badge-service",
-      image: DOCKER_SCROLL_SERVICE_IMAGE,
-      cpu: 512,
-      memory: 1024,
-      links: [],
-      essential: true,
-      portMappings: [
-        {
-          containerPort: 80,
-          hostPort: 80,
-          protocol: "tcp",
-        },
-      ],
-      environment: [],
-      logConfiguration: {
-        logDriver: "awslogs",
-        options: {
-          "awslogs-group": "scroll-badge-service", // "${serviceLogGroup.name}`,
-          "awslogs-region": "us-west-2", // `${regionId}`,
-          "awslogs-create-group": "true",
-          "awslogs-stream-prefix": "scroll",
-        },
-      },
-      secrets: getIamSecrets(SCROLL_SECRETS_ARN, VC_SECRETS_ARN),
-      mountPoints: [],
-      volumesFrom: [],
-    },
-  ]),
-  executionRoleArn: serviceRole.arn,
-  cpu: "512",
-  memory: "1024",
-  networkMode: "awsvpc",
-  requiresCompatibilities: ["FARGATE"],
-  tags: {
-    ...defaultTags,
-    EcsService: `scroll-badge-service`,
-  },
-});
 
-const service = new aws.ecs.Service(
-  `scroll-badge-service`,
-  {
-    cluster: passportClusterArn,
-    desiredCount: stack === "production" ? 2 : 1,
-    enableEcsManagedTags: true,
-    enableExecuteCommand: false,
-    launchType: "FARGATE",
-    loadBalancers: [
+const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
+  const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service-td`, {
+    family: `scroll-badge-service-td`,
+    containerDefinitions: JSON.stringify([
       {
-        containerName: "scroll-badge-service",
-        containerPort: 80,
-        targetGroupArn: albTargetGroup.arn,
+        name: "scroll-badge-service",
+        image: drk_image,
+        cpu: 512,
+        memory: 1024,
+        links: [],
+        essential: true,
+        portMappings: [
+          {
+            containerPort: 80,
+            hostPort: 80,
+            protocol: "tcp",
+          },
+        ],
+        environment: [],
+        logConfiguration: {
+          logDriver: "awslogs",
+          options: {
+            "awslogs-group": "scroll-badge-service", // "${serviceLogGroup.name}`,
+            "awslogs-region": "us-west-2", // `${regionId}`,
+            "awslogs-create-group": "true",
+            "awslogs-stream-prefix": "scroll",
+          },
+        },
+        secrets: getIamSecrets(SCROLL_SECRETS_ARN, VC_SECRETS_ARN),
+        mountPoints: [],
+        volumesFrom: [],
       },
-    ],
-    name: `scroll-badge-service`,
-    networkConfiguration: {
-      subnets: vpcPrivateSubnets,
-      securityGroups: [serviceSG.id],
-    },
-    propagateTags: "TASK_DEFINITION",
-    taskDefinition: taskDefinition.arn,
+    ]),
+    executionRoleArn: serviceRole.arn,
+    cpu: "512",
+    memory: "1024",
+    networkMode: "awsvpc",
+    requiresCompatibilities: ["FARGATE"],
     tags: {
       ...defaultTags,
-      Name: `scroll-badge-service`,
+      EcsService: `scroll-badge-service`,
     },
-  },
-  {
-    dependsOn: [albTargetGroup, taskDefinition],
-  }
-);
+  });
+
+  const service = new aws.ecs.Service(
+    `scroll-badge-service`,
+    {
+      cluster: passportClusterArn,
+      desiredCount: stack === "production" ? 2 : 1,
+      enableEcsManagedTags: true,
+      enableExecuteCommand: false,
+      launchType: "FARGATE",
+      loadBalancers: [
+        {
+          containerName: "scroll-badge-service",
+          containerPort: 80,
+          targetGroupArn: albTargetGroup.arn,
+        },
+      ],
+      name: `scroll-badge-service`,
+      networkConfiguration: {
+        subnets: vpcPrivateSubnets,
+        securityGroups: [serviceSG.id],
+      },
+      propagateTags: "TASK_DEFINITION",
+      taskDefinition: taskDefinition.arn,
+      tags: {
+        ...defaultTags,
+        Name: `scroll-badge-service`,
+      },
+    },
+    {
+      dependsOn: [albTargetGroup, taskDefinition],
+    }
+  );
+  return { taskDefinition, service };
+});
+
+export const taskDefinitionRevision = service_data.taskDefinition.revision;
