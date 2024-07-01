@@ -12,7 +12,6 @@ import cors from "cors";
 
 const app = express();
 app.use(cors());
-const port = 3003;
 
 if (!process.env.SCROLL_EAS_SCAN_URL) {
   console.error("Missing SCROLL_EAS_SCAN_URL environment variable");
@@ -43,6 +42,8 @@ const PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS: string = `${process.env.PASSPORT
 const PASSPORT_SCORE_SCHEMA_UID: string = `${process.env.PASSPORT_SCORE_SCHEMA_UID}`;
 const SCROLL_RPC_URL: string = `${process.env.SCROLL_RPC_URL}`;
 const ATTESTER_PROXY_ADDRESS: string = `${process.env.ATTESTER_PROXY_ADDRESS}`;
+// default port to listen on
+const port = process.env.SERVICE_PORT || 80;
 
 const SCROLL_BADGE_SCHEMA = "address badge, bytes payload";
 
