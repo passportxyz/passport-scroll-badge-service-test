@@ -179,7 +179,7 @@ jobs:
         if: ${{ inputs.deploy_staging }}
         with:
           docker_tag: ${{ needs.docker.outputs.docker_tag }}
-          stack_name: gitcoin/passport-scroll-badge-service/staging
+          stack_name: gitcoin/scroll-badge-service/staging
           aws_region: us-west-2
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
@@ -192,7 +192,7 @@ jobs:
         if: ${{ inputs.deploy_production }}
         with:
           docker_tag: ${{ needs.docker.outputs.docker_tag }}
-          stack_name: gitcoin/passport-scroll-badge-service/production
+          stack_name: gitcoin/scroll-badge-service/production
           aws_region: us-west-2
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_PRODUCTION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_PRODUCTION }}
