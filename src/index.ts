@@ -227,6 +227,10 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello, world!");
 });
 
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json({ status: "Healthy" });
+});
+
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
