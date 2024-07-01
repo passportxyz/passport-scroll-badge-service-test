@@ -42,8 +42,6 @@ on:
         required: false
       IAM_SERVER_SSM_ARN_STAGING:
         required: false
-      IAM_SERVER_SSM_ARN_REVIEW:
-        required: true
       ROUTE_53_ZONE_PRODUCTION:
         required: false
       ROUTE_53_ZONE_STAGING:
@@ -170,10 +168,10 @@ jobs:
         uses: ./.github/actions/prepare_deploy_to_aws
       - name: Deploy Review
         uses: ./.github/actions/deploy_to_aws
-        if: ${{ inputs.deploy_review }}
+        if: ${{ inputs.deploy_staging }}
         with:
           docker_tag: ${{ needs.docker.outputs.docker_tag }}
-          stack_name: gitcoin/scroll-badge-service/staging
+          stack_name: gitcoin/scroll-badge-service/review
           aws_region: us-west-2
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_REVIEW }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_REVIEW }}
