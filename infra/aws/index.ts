@@ -8,10 +8,18 @@ export const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
 
 export const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
 
-export const dockerScrollServiceImage = `${
+export const DOCKER_IMAGE_TAG = `${
   process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
 }`;
 
+const current = aws.getCallerIdentity({});
+const regionData = aws.getRegion({});
+export const DOCKER_SCROLL_SERVICE_IMAGE = pulumi
+  .all([current, regionData])
+  .apply(
+    ([acc, region]) =>
+      `${acc.accountId}.dkr.ecr.${region.id}.amazonaws.com/scroll-badge-service:${DOCKER_IMAGE_TAG}`
+  );
 const stack = pulumi.getStack();
 const region = aws.getRegion({});
 
@@ -38,7 +46,7 @@ const vpcId = coreInfraStack.getOutput("vpcId");
 
 const albHttpsListenerArn = coreInfraStack.getOutput("coreAlbHttpsListenerArn");
 
-const serviceRole = new aws.iam.Role("passport-ecs-role", {
+const serviceRole = new aws.iam.Role("scroll-badge-ecs-role", {
   assumeRolePolicy: JSON.stringify({
     Version: "2012-10-17",
     Statement: [
@@ -195,7 +203,7 @@ const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service-td`, {
   containerDefinitions: JSON.stringify([
     {
       name: "scroll-badge-service",
-      image: dockerScrollServiceImage,
+      image: DOCKER_SCROLL_SERVICE_IMAGE,
       cpu: 512,
       memory: 1024,
       links: [],
