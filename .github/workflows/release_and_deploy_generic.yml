@@ -11,10 +11,10 @@ on:
         description: "Create a github release for this deployment"
         type: boolean
         required: false
-      # deploy_review:
-      #   description: "Deploy to review"
-      #   type: boolean
-      #   required: false
+      deploy_review:
+        description: "Deploy to review"
+        type: boolean
+        required: false
       deploy_staging:
         description: "Deploy to staging"
         type: boolean
@@ -26,10 +26,10 @@ on:
     secrets:
       PULUMI_ACCESS_TOKEN:
         required: true
-      # AWS_ACCESS_KEY_ID_REVIEW:
-      #   required: false
-      # AWS_SECRET_ACCESS_KEY_REVIEW:
-      #   required: false
+      AWS_ACCESS_KEY_ID_REVIEW:
+        required: true
+      AWS_SECRET_ACCESS_KEY_REVIEW:
+        required: true
       AWS_ACCESS_KEY_ID_STAGING:
         required: false
       AWS_SECRET_ACCESS_KEY_STAGING:
@@ -42,10 +42,14 @@ on:
         required: false
       IAM_SERVER_SSM_ARN_STAGING:
         required: false
+      IAM_SERVER_SSM_ARN_REVIEW:
+        required: true
       ROUTE_53_ZONE_PRODUCTION:
         required: false
       ROUTE_53_ZONE_STAGING:
         required: false
+      ROUTE_53_ZONE_REVIEW:
+        required: true
 
 jobs:
   ref:
@@ -121,15 +125,15 @@ jobs:
           ecr_repository_name: scroll-badge-service
           dockerfile_name: Dockerfile
           build_dir: ./
-      # - name: Docker Push to Review
-      #   uses: ./.github/actions/docker_deploy
-      #   if: ${{ inputs.deploy_review }}
-      #   with:
-      #     docker_tag: ${{ steps.sha.outputs.sha_short }}
-      #     ecr_repository_name: scroll-badge-service
-      #     aws_region: us-west-2
-      #     aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID_REVIEW }}
-      #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY_REVIEW }}
+      - name: Docker Push to Review
+        uses: ./.github/actions/docker_deploy
+        if: ${{ inputs.deploy_review }}
+        with:
+          docker_tag: ${{ steps.sha.outputs.sha_short }}
+          ecr_repository_name: scroll-badge-service
+          aws_region: us-west-2
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID_REVIEW }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY_REVIEW }}
       - name: Docker Push to Staging
         uses: ./.github/actions/docker_deploy
         if: ${{ inputs.deploy_staging }}
@@ -164,16 +168,19 @@ jobs:
           fetch-depth: 0
       - name: Prepare to Deploy to AWS
         uses: ./.github/actions/prepare_deploy_to_aws
-      # - name: Deploy Review
-      #   uses: ./.github/actions/deploy_to_aws
-      #   if: ${{ inputs.deploy_review }}
-      #   with:
-      #     docker_tag: ${{ needs.docker.outputs.docker_tag }}
-      #     stack_name: gitcoin/review
-      #     aws_region: us-west-2
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_REVIEW }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_REVIEW }}
-      #     PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      - name: Deploy Review
+        uses: ./.github/actions/deploy_to_aws
+        if: ${{ inputs.deploy_review }}
+        with:
+          docker_tag: ${{ needs.docker.outputs.docker_tag }}
+          stack_name: gitcoin/scroll-badge-service/staging
+          aws_region: us-west-2
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_REVIEW }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_REVIEW }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          ROUTE_53_DOMAIN: ${{ secrets.ROUTE_53_DOMAIN_REVIEW }}
+          SCROLL_SECRETS_ARN: ${{ secrets.SCROLL_SECRETS_ARN_REVIEW }}
+          VC_SECRETS_ARN: ${{ secrets.VC_SECRETS_ARN_REVIEW }}
       - name: Deploy Staging
         uses: ./.github/actions/deploy_to_aws
         if: ${{ inputs.deploy_staging }}
