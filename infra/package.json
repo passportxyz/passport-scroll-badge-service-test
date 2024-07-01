@@ -1,6 +1,5 @@
 {
   "name": "passport-scroll-badge-service",
-  "main": "index.ts",
   "devDependencies": {
     "@types/node": "^18",
     "typescript": "^5.0.0"

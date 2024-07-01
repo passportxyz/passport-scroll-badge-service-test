@@ -8,9 +8,7 @@ export const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
 
 export const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
 
-export const DOCKER_IMAGE_TAG = `${
-  process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
-}`;
+export const DOCKER_IMAGE_TAG = `${process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""}`;
 
 const current = aws.getCallerIdentity({});
 const regionData = aws.getRegion({});
@@ -41,6 +39,7 @@ const passportInfraStack = new pulumi.StackReference(
 );
 
 const passportClusterArn = passportInfraStack.getOutput("passportClusterArn");
+export const passportClusterNameArn = passportClusterArn
 
 const vpcId = coreInfraStack.getOutput("vpcId");
 
@@ -174,7 +173,9 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
   actions: [
     {
       type: "forward",
-      targetGroupArn: albTargetGroup.arn,
+      forward: {
+        targetGroups: [{ arn: albTargetGroup.arn }]
+      }
     },
   ],
   conditions: [
@@ -185,7 +186,7 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
     },
     {
       pathPattern: {
-        values: ["/scroll*"],
+        values: ["/scroll/*"],
       },
     },
   ],
