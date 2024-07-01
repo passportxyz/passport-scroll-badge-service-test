@@ -166,7 +166,7 @@ jobs:
         uses: ./.github/actions/prepare_deploy_to_aws
       - name: Deploy Review
         uses: ./.github/actions/deploy_to_aws
-        if: ${{ inputs.deploy_staging }}
+        if: ${{ inputs.deploy_review }}
         with:
           docker_tag: ${{ needs.docker.outputs.docker_tag }}
           stack_name: gitcoin/scroll-badge-service/review
