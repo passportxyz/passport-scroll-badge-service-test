@@ -3,37 +3,84 @@ import * as aws from "@pulumi/aws";
 
 import { getIamSecrets } from "./secrets";
 
-const IAM_SERVER_SSM_ARN = `${process.env["IAM_SERVER_SSM_ARN"]}`;
+const SCROLL_SECRETS_ARN = `${process.env["SCROLL_SECRETS_ARN"]}`;
+const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
 
-const route53Domain = `${process.env["ROUTE_53_DOMAIN"]}`;
+const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
 
-export const dockerScrollServiceImage = `${process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""}`;
+export const dockerScrollServiceImage = `${
+  process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
+}`;
 
 const stack = pulumi.getStack();
 const region = aws.getRegion({});
 
-const coreInfraStack = new pulumi.StackReference(`gitcoin/core-infra/${stack}`);
-const passportInfraStack = new pulumi.StackReference(`gitcoin/passport/${stack}`);
-
-const passportClusterArn = passportInfraStack.getOutput("passportClusterArn");
-const passportServiceRoleArn = passportInfraStack.getOutput("passportServiceRoleArn");
-
-const vpcId = coreInfraStack.getOutput("vpcId");
-
-const albDnsName = coreInfraStack.getOutput("coreAlbDns");
-const albZoneId = coreInfraStack.getOutput("coreAlbZoneId");
-const albHttpsListenerArn = coreInfraStack.getOutput("coreAlbHttpsListenerArn");
-
 const defaultTags = {
   ManagedBy: "pulumi",
   PulumiStack: stack,
-  Project: "passport",
+  Project: "scroll-badge",
 };
 
 const logsRetention = Object({
   review: 1,
   staging: 7,
   production: 30,
+});
+
+const coreInfraStack = new pulumi.StackReference(`gitcoin/core-infra/${stack}`);
+const passportInfraStack = new pulumi.StackReference(
+  `gitcoin/passport/${stack}`
+);
+
+const passportClusterArn = passportInfraStack.getOutput("passportClusterArn");
+
+const vpcId = coreInfraStack.getOutput("vpcId");
+
+const albHttpsListenerArn = coreInfraStack.getOutput("coreAlbHttpsListenerArn");
+
+const serviceRole = new aws.iam.Role("passport-ecs-role", {
+  assumeRolePolicy: JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Sid: "EcsAssume",
+        Action: "sts:AssumeRole",
+        Effect: "Allow",
+        Principal: {
+          Service: "ecs-tasks.amazonaws.com",
+        },
+      },
+    ],
+  }),
+  inlinePolicies: [
+    {
+      name: "allow_iam_secrets_access",
+      policy: JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Action: ["secretsmanager:GetSecretValue"],
+            Effect: "Allow",
+            Resource: [SCROLL_SECRETS_ARN, VC_SECRETS_ARN],
+          },
+        ],
+      }),
+    },
+  ],
+  managedPolicyArns: [
+    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+  ],
+  tags: {
+    ...defaultTags,
+  },
+});
+
+const serviceLogGroup = new aws.cloudwatch.LogGroup("scroll-badge-service", {
+  name: "scroll-badge-service",
+  retentionInDays: logsRetention[stack],
+  tags: {
+    ...defaultTags,
+  },
 });
 
 const vpcPrivateSubnets = coreInfraStack.getOutput("privateSubnetIds");
@@ -52,7 +99,6 @@ const serviceSG = new aws.ec2.SecurityGroup(`scroll-badge-service-sg`, {
   },
 });
 
-
 // do no group the security group definition & rules in the same resource =>
 // it will cause the sg to be destroyed and recreated everytime the rules change
 // By managing them separately is easier to update the security group rules even outside of this stack
@@ -70,7 +116,6 @@ const sgIngressRule80 = new aws.ec2.SecurityGroupRule(
     dependsOn: [serviceSG],
   }
 );
-
 
 // Allow all outbound traffic
 const sgEgressRule = new aws.ec2.SecurityGroupRule(
@@ -108,12 +153,6 @@ const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service-tg`, {
   },
   port: 80,
   protocol: "HTTP",
-  // stickiness: { // is Stickiness required ?
-  //     type: "app_cookie",
-  //     cookieName: "gtc-passport",
-  //     cookieDuration: 86400,
-  //     enabled: true
-  // },
   targetType: "ip",
   tags: {
     ...defaultTags,
@@ -121,8 +160,6 @@ const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service-tg`, {
   },
 });
 
-
-export const listnerearn = albHttpsListenerArn
 const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
   listenerArn: albHttpsListenerArn,
   priority: 10,
@@ -135,7 +172,7 @@ const albListenerRule = new aws.lb.ListenerRule(`scroll-badge-service-https`, {
   conditions: [
     {
       hostHeader: {
-        values: [route53Domain],
+        values: [ROUTE53_DOMAIN],
       },
     },
     {
@@ -157,7 +194,7 @@ const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service-td`, {
   family: `scroll-badge-service-td`,
   containerDefinitions: JSON.stringify([
     {
-      name: "scroll-badge-service-td",
+      name: "scroll-badge-service",
       image: dockerScrollServiceImage,
       cpu: 512,
       memory: 1024,
@@ -170,32 +207,22 @@ const taskDefinition = new aws.ecs.TaskDefinition(`scroll-badge-service-td`, {
           protocol: "tcp",
         },
       ],
-      environment: [
-        // todo might need to add env vars here
-        // {
-        //   name: "REDIS_URL",
-        //   value: _redisConnectionUrl,
-        // },
-        // {
-        //   name: "DATA_SCIENCE_API_URL",
-        //   value: passportDataScienceEndpoint,
-        // },
-      ],
+      environment: [],
       logConfiguration: {
         logDriver: "awslogs",
         options: {
-          "awslogs-group": "passport-iam", // "${serviceLogGroup.name}`,
+          "awslogs-group": "scroll-badge-service", // "${serviceLogGroup.name}`,
           "awslogs-region": "us-west-2", // `${regionId}`,
           "awslogs-create-group": "true",
-          "awslogs-stream-prefix": "iam",
+          "awslogs-stream-prefix": "scroll",
         },
       },
-      secrets: getIamSecrets(IAM_SERVER_SSM_ARN),
+      secrets: getIamSecrets(SCROLL_SECRETS_ARN, VC_SECRETS_ARN),
       mountPoints: [],
       volumesFrom: [],
-    }
+    },
   ]),
-  executionRoleArn: passportServiceRoleArn,
+  executionRoleArn: serviceRole.arn,
   cpu: "512",
   memory: "1024",
   networkMode: "awsvpc",
@@ -216,7 +243,7 @@ const service = new aws.ecs.Service(
     launchType: "FARGATE",
     loadBalancers: [
       {
-        containerName: "iam",
+        containerName: "scroll-badge-service",
         containerPort: 80,
         targetGroupArn: albTargetGroup.arn,
       },
@@ -237,10 +264,3 @@ const service = new aws.ecs.Service(
     dependsOn: [albTargetGroup, taskDefinition],
   }
 );
-
-
-// Nodejs base iamge for lambdas
-// https://docs.aws.amazon.com/lambda/latest/dg/nodejs-image.html
-// avoid creating new load balancer, use existing one
-// Possible to route from load balancer to ECS service via api.passport.gitcoin.co/scroll or scroll.api.passport.gitcoin.co
-//

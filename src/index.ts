@@ -17,8 +17,10 @@ const port = 3003;
 if (!process.env.SCROLL_EAS_SCAN_URL) {
   console.error("Missing SCROLL_EAS_SCAN_URL environment variable");
 }
-if (!process.env.ATTESTATION_SIGNER_PRIVATE_KEY) {
-  console.error("Missing ATTESTATION_SIGNER_PRIVATE_KEY environment variable");
+if (!process.env.SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY) {
+  console.error(
+    "Missing SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY environment variable"
+  );
 }
 if (!process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS) {
   console.error(
@@ -36,7 +38,7 @@ if (!process.env.ATTESTER_PROXY_ADDRESS) {
 }
 
 const SCROLL_EAS_SCAN_URL: string = `${process.env.SCROLL_EAS_SCAN_URL}`;
-const ATTESTATION_SIGNER_PRIVATE_KEY: string = `${process.env.ATTESTATION_SIGNER_PRIVATE_KEY}`;
+const ATTESTATION_SIGNER_PRIVATE_KEY: string = `${process.env.SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY}`;
 const PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS: string = `${process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS}`;
 const PASSPORT_SCORE_SCHEMA_UID: string = `${process.env.PASSPORT_SCORE_SCHEMA_UID}`;
 const SCROLL_RPC_URL: string = `${process.env.SCROLL_RPC_URL}`;
@@ -178,7 +180,7 @@ export const getAttestations = async (
 };
 
 export function parseScoreFromAttestation(
-  attestations: Attestation[],
+  attestations: Attestation[]
 ): number | null {
   const schemaId = PASSPORT_SCORE_SCHEMA_UID;
   const validAttestation = attestations.find(
@@ -248,9 +250,7 @@ app.get("/scroll/check", async (req: Request, res: Response): Promise<void> => {
       PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS,
       SCROLL_EAS_SCAN_URL
     );
-    const score = parseScoreFromAttestation(
-      attestations
-    );
+    const score = parseScoreFromAttestation(attestations);
 
     const eligibility = Boolean(score && score >= 20);
     return void res.json({
@@ -284,9 +284,7 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
     PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS,
     SCROLL_EAS_SCAN_URL
   );
-  const score = parseScoreFromAttestation(
-    attestations
-  );
+  const score = parseScoreFromAttestation(attestations);
 
   const eligibility = score && score >= 20;
   if (!eligibility)
