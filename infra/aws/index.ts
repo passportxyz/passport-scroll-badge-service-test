@@ -38,7 +38,7 @@ const vpcId = coreInfraStack.getOutput("vpcId");
 
 const albHttpsListenerArn = coreInfraStack.getOutput("coreAlbHttpsListenerArn");
 
-const serviceRole = new aws.iam.Role("passport-ecs-role", {
+const serviceRole = new aws.iam.Role("scroll-badge-ecs-role", {
   assumeRolePolicy: JSON.stringify({
     Version: "2012-10-17",
     Statement: [
