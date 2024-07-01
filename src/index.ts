@@ -35,11 +35,16 @@ if (!process.env.SCROLL_RPC_URL) {
 if (!process.env.ATTESTER_PROXY_ADDRESS) {
   console.error("Missing ATTESTER_PROXY_ADDRESS environment variable");
 }
+if (!process.env.SCROLL_BADGE_SCHEMA_UID) {
+  console.error("Missing SCROLL_BADGE_SCHEMA_UID environment variable");
+}
 
 const SCROLL_EAS_SCAN_URL: string = `${process.env.SCROLL_EAS_SCAN_URL}`;
 const ATTESTATION_SIGNER_PRIVATE_KEY: string = `${process.env.SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY}`;
 const PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS: string = `${process.env.PASSPORT_SCORE_ATTESTER_CONTRACT_ADDRESS}`;
 const PASSPORT_SCORE_SCHEMA_UID: string = `${process.env.PASSPORT_SCORE_SCHEMA_UID}`;
+const SCROLL_BADGE_SCHEMA_UID: string = `${process.env.SCROLL_BADGE_SCHEMA_UID}`;
+
 const SCROLL_RPC_URL: string = `${process.env.SCROLL_RPC_URL}`;
 const ATTESTER_PROXY_ADDRESS: string = `${process.env.ATTESTER_PROXY_ADDRESS}`;
 // default port to listen on
@@ -310,13 +315,15 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
       { name: "payload", value: "0x", type: "bytes" },
     ]);
 
+    console.log("encoded data: ", data);
+
     const currentTime = Math.floor(new Date().getTime() / 1000);
     const deadline = currentTime + 3600;
 
     const delegatedProxy = await proxy.connect(signer).getDelegated();
     const attestation = {
       // attestation data
-      schema: SCROLL_BADGE_SCHEMA,
+      schema: SCROLL_BADGE_SCHEMA_UID,
       recipient,
       data,
 
@@ -330,11 +337,14 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
       deadline: BigInt(deadline),
       attester: signer.address,
     };
+
+    console.log("Signing attestation...");
     const signature = await delegatedProxy.signDelegatedProxyAttestation(
       attestation,
       signer
     );
 
+    console.log("signature", signature);
     // claimer vs attester
     const attestByDelegationInput = {
       schema: attestation.schema,
@@ -344,10 +354,12 @@ app.get("/scroll/claim", async (req: Request, res: Response): Promise<void> => {
       deadline: attestation.deadline,
     };
 
+    console.log("Populating transaction...");
     const tx = await proxy.contract.attestByDelegation.populateTransaction(
       attestByDelegationInput
     );
 
+    console.log("tx", tx);
     return void res.json({ code: 1, message: "success", tx });
   } catch (e) {
     console.error("Error claiming badge:", e);

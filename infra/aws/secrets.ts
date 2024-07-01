@@ -23,6 +23,10 @@ export const getIamSecrets = (
     valueFrom: `${SCROLL_SECRETS_ARN}:ATTESTER_PROXY_ADDRESS::`,
   },
   {
+    name: "SCROLL_BADGE_SCHEMA_UID",
+    valueFrom: `${SCROLL_SECRETS_ARN}:SCROLL_BADGE_SCHEMA_UID::`,
+  },
+  {
     name: "SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY",
     valueFrom: `${VC_SECRETS_ARN}:SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY::`,
   },
