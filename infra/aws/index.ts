@@ -288,7 +288,7 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
     {
       maxCapacity: 10,
       minCapacity: 1,
-      resourceId: pulumi.interpolate`service/${passportClusterNameArn}/${service.name}`,
+      resourceId: pulumi.interpolate`service/${passportClusterName}/${service.name}`,
       scalableDimension: "ecs:service:DesiredCount",
       serviceNamespace: "ecs",
     }
