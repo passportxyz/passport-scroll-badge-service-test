@@ -158,7 +158,7 @@ const albTargetGroup = new aws.lb.TargetGroup(`scroll-badge-service-tg`, {
     healthyThreshold: 3,
     interval: 30,
     matcher: "200",
-    path: "/health",
+    path: "/scroll/health",
     port: "traffic-port",
     protocol: "HTTP",
     timeout: 5,

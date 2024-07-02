@@ -229,11 +229,11 @@ const errorRes = (
   errorCode: number
 ): Response => res.status(errorCode).json({ error });
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/scroll", (req: Request, res: Response) => {
   res.send("Hello, world!");
 });
 
-app.get("/health", (req: Request, res: Response) => {
+app.get("/scroll/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "Healthy" });
 });
 
