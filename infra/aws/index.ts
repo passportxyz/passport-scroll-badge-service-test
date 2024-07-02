@@ -42,7 +42,9 @@ const passportInfraStack = new pulumi.StackReference(
 );
 
 const passportClusterArn = passportInfraStack.getOutput("passportClusterArn");
-const passportClusterName = passportInfraStack.getOutput("passportClusterName");
+export const passportClusterName = passportInfraStack.getOutput(
+  "passportClusterName"
+);
 export const passportClusterNameArn = passportClusterArn;
 
 const vpcId = coreInfraStack.getOutput("vpcId");
@@ -324,7 +326,7 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
       },
       evaluationPeriods: 1,
       metricName: "RunningTaskCount",
-      name: `RunningTaskCount-${name}`,
+      name: `RunningTaskCount-scroll-badge`,
       namespace: "ECS/ContainerInsights",
       period: 300,
       statistic: "Average",
