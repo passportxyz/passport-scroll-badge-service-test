@@ -36,11 +36,13 @@ const logsRetention = Object({
 });
 
 const coreInfraStack = new pulumi.StackReference(`gitcoin/core-infra/${stack}`);
+const snsAlertsTopicArn = coreInfraStack.getOutput("snsAlertsTopicArn");
 const passportInfraStack = new pulumi.StackReference(
   `gitcoin/passport/${stack}`
 );
 
 const passportClusterArn = passportInfraStack.getOutput("passportClusterArn");
+const passportClusterName = passportInfraStack.getOutput("passportClusterName");
 export const passportClusterNameArn = passportClusterArn;
 
 const vpcId = coreInfraStack.getOutput("vpcId");
@@ -277,6 +279,59 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
       dependsOn: [albTargetGroup, taskDefinition],
     }
   );
+
+  // Manage Autoscaling
+  const ecsAutoScalingTarget = new aws.appautoscaling.Target(
+    `scroll-badge-service-scaling`,
+    {
+      maxCapacity: 10,
+      minCapacity: 1,
+      resourceId: pulumi.interpolate`service/${passportClusterNameArn}/${service.name}`,
+      scalableDimension: "ecs:service:DesiredCount",
+      serviceNamespace: "ecs",
+    }
+  );
+
+  const ecsAutoScalingPolicy = new aws.appautoscaling.Policy(
+    "passport-autoscaling-policy",
+    {
+      policyType: "TargetTrackingScaling",
+      resourceId: ecsAutoScalingTarget.resourceId,
+      scalableDimension: ecsAutoScalingTarget.scalableDimension,
+      serviceNamespace: ecsAutoScalingTarget.serviceNamespace,
+      targetTrackingScalingPolicyConfiguration: {
+        predefinedMetricSpecification: {
+          predefinedMetricType: "ECSServiceAverageCPUUtilization",
+        },
+        targetValue: 70,
+        scaleInCooldown: 300,
+        scaleOutCooldown: 300,
+      },
+    }
+  );
+
+  const runningTaskCountAlarm = new aws.cloudwatch.MetricAlarm(
+    `RunningTaskCount-scroll-badge`,
+    {
+      tags: { name: `RunningTaskCount-scroll-badge` },
+      alarmActions: [snsAlertsTopicArn],
+      okActions: [snsAlertsTopicArn],
+      comparisonOperator: "GreaterThanThreshold",
+      datapointsToAlarm: 1,
+      dimensions: {
+        ClusterName: passportClusterName,
+        ServiceName: service.name,
+      },
+      evaluationPeriods: 1,
+      metricName: "RunningTaskCount",
+      name: `RunningTaskCount-${name}`,
+      namespace: "ECS/ContainerInsights",
+      period: 300,
+      statistic: "Average",
+      threshold: 7,
+    }
+  );
+  //
   return { taskDefinition, service };
 });
 
