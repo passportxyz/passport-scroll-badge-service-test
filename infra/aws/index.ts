@@ -8,9 +8,8 @@ export const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
 
 export const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
 
-export const DOCKER_IMAGE_TAG = `${
-  process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
-}`;
+export const DOCKER_IMAGE_TAG = `${process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
+  }`;
 
 const current = aws.getCallerIdentity({});
 const regionData = aws.getRegion({});
@@ -254,7 +253,7 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
     `scroll-badge-service`,
     {
       cluster: passportClusterArn,
-      desiredCount: stack === "production" ? 2 : 1,
+      desiredCount: 1,
       enableEcsManagedTags: true,
       enableExecuteCommand: false,
       launchType: "FARGATE",
