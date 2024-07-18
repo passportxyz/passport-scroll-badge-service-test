@@ -156,11 +156,24 @@ export const getAttestations = async (
   easScanUrl: string
 ): Promise<Attestation[]> => {
   const query = `
-      query {
-        attestations (where: {
-            attester: { equals: "${attester}" },
-            recipient: { equals: "${address}", mode: insensitive }
-        }) {
+    query {
+      attestations(
+        where: {
+          attester: {
+            equals: "${attester}"
+            mode: insensitive
+          }
+          recipient: {
+            equals: "${address}"
+            mode: insensitive
+          }
+          schemaId: {
+            equals: "${PASSPORT_SCORE_SCHEMA_UID}"
+            mode: insensitive
+          }
+        }
+        orderBy: [{ timeCreated: desc }]
+      ) {
           recipient
           revocationTime
           revoked
@@ -169,9 +182,9 @@ export const getAttestations = async (
           schema {
             id
           }
-        }
-      }
-    `;
+        }      
+    }
+`;
 
   let result: EASQueryResponse | undefined = undefined;
   try {
