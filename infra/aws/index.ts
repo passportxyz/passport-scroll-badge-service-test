@@ -1,15 +1,28 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+import * as op from "@1password/op-js";
 
-import { getIamSecrets } from "./secrets";
+import {
+  getEnvironmentVars,
+  syncSecretsAndGetRefs,
+  sortByName,
+} from "./secrets";
 
-export const SCROLL_SECRETS_ARN = `${process.env["SCROLL_SECRETS_ARN"]}`;
-export const VC_SECRETS_ARN = `${process.env["VC_SECRETS_ARN"]}`;
+const stack = pulumi.getStack();
 
-export const ROUTE53_DOMAIN = `${process.env["ROUTE_53_DOMAIN"]}`;
+export const SCROLL_SECRETS_ARN = op.read.parse(
+  `op://DevOps/passport-scroll-badge-service-${stack}-infra/service/SCROLL_SECRETS_ARN`
+);
+export const ROUTE53_DOMAIN = op.read.parse(
+  `op://DevOps/passport-scroll-badge-service-${stack}-infra/service/ROUTE53_DOMAIN`
+);
+export const VC_SECRETS_ARN = op.read.parse(
+  `op://DevOps/passport-scroll-badge-service-${stack}-infra/service/VC_SECRETS_ARN`
+);
 
-export const DOCKER_IMAGE_TAG = `${process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
-  }`;
+export const DOCKER_IMAGE_TAG = `${
+  process.env.SCROLL_BADGE_SERVICE_IMAGE_TAG || ""
+}`;
 
 const current = aws.getCallerIdentity({});
 const regionData = aws.getRegion({});
@@ -19,8 +32,6 @@ export const DOCKER_SCROLL_SERVICE_IMAGE = pulumi
     ([acc, region]) =>
       `${acc.accountId}.dkr.ecr.${region.id}.amazonaws.com/scroll-badge-service:${DOCKER_IMAGE_TAG}`
   );
-const stack = pulumi.getStack();
-const region = aws.getRegion({});
 
 const defaultTags = {
   ManagedBy: "pulumi",
@@ -49,6 +60,28 @@ export const passportClusterNameArn = passportClusterArn;
 const vpcId = coreInfraStack.getOutput("vpcId");
 
 const albHttpsListenerArn = coreInfraStack.getOutput("coreAlbHttpsListenerArn");
+
+const passwordManagerParams = {
+  vault: "DevOps",
+  repo: "passport-scroll-badge-service",
+  env: stack,
+  section: "service",
+};
+
+const scrollBadgeServiceSecretReferences = syncSecretsAndGetRefs({
+  ...passwordManagerParams,
+  targetSecretArn: SCROLL_SECRETS_ARN,
+});
+
+const secrets = [
+  ...scrollBadgeServiceSecretReferences,
+  {
+    name: "SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY",
+    valueFrom: `${VC_SECRETS_ARN}:SCROLL_BADGE_ATTESTATION_SIGNER_PRIVATE_KEY::`,
+  },
+].sort(sortByName);
+
+const environment = getEnvironmentVars(passwordManagerParams);
 
 const serviceRole = new aws.iam.Role("scroll-badge-ecs-role", {
   assumeRolePolicy: JSON.stringify({
@@ -223,7 +256,6 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
             protocol: "tcp",
           },
         ],
-        environment: [],
         logConfiguration: {
           logDriver: "awslogs",
           options: {
@@ -233,9 +265,10 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
             "awslogs-stream-prefix": "scroll",
           },
         },
-        secrets: getIamSecrets(SCROLL_SECRETS_ARN, VC_SECRETS_ARN),
         mountPoints: [],
         volumesFrom: [],
+        environment,
+        secrets,
       },
     ]),
     executionRoleArn: serviceRole.arn,
@@ -332,7 +365,7 @@ const service_data = DOCKER_SCROLL_SERVICE_IMAGE.apply((drk_image) => {
       threshold: 7,
     }
   );
-  //
+
   return { taskDefinition, service };
 });
 

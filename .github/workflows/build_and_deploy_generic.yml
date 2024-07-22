@@ -39,8 +39,8 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/AWS_SECRET_ACCESS_KEY
+          AWS_ACCESS_KEY_ID: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/AWS_SECRET_ACCESS_KEY
       - id: build_and_push_docker_image
         uses: passportxyz/gh-workflows/.github/actions/build_and_push@main
         with:
@@ -63,34 +63,41 @@ jobs:
         with:
           ref: ${{ needs.ref.outputs.refspec }}
           fetch-depth: 0
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+      - name: Configure 1Password Service Account
+        uses: 1password/load-secrets-action/configure@v1
+        with:
+          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
       - name: Load secret
         id: op-load-secret
         uses: 1password/load-secrets-action@v1
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/AWS_SECRET_ACCESS_KEY
-          PULUMI_ACCESS_TOKEN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/PULUMI_ACCESS_TOKEN
-          ROUTE_53_DOMAIN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/service/ROUTE_53_DOMAIN
-          SCROLL_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/service/SCROLL_SECRETS_ARN
-          VC_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/service/VC_SECRETS_ARN
+          AWS_ACCESS_KEY_ID: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/AWS_SECRET_ACCESS_KEY
+          PULUMI_ACCESS_TOKEN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/PULUMI_ACCESS_TOKEN
+          ROUTE_53_DOMAIN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/ci/ROUTE_53_DOMAIN
+          SCROLL_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/ci/SCROLL_SECRETS_ARN
+          VC_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/ci/VC_SECRETS_ARN
       - name: Prepare to Deploy to AWS
         uses: ./.github/actions/prepare_deploy_to_aws
-      - name: Deploy Review
+      - name: Deploy Preview
         uses: ./.github/actions/deploy_to_aws
         with:
           docker_tag: ${{ needs.ref.outputs.docker_tag }}
           stack_name: gitcoin/scroll-badge-service/${{ inputs.environment }}
           aws_region: us-west-2
           pulumi_command: preview
+          pulumi_diff: "true"
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           PULUMI_ACCESS_TOKEN: ${{ env.PULUMI_ACCESS_TOKEN }}
           ROUTE_53_DOMAIN: ${{ env.ROUTE_53_DOMAIN }}
           SCROLL_SECRETS_ARN: ${{ env.SCROLL_SECRETS_ARN }}
           VC_SECRETS_ARN: ${{ env.VC_SECRETS_ARN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
   deploy_confirm:
     name: Review Approval Pending
@@ -112,19 +119,24 @@ jobs:
         with:
           ref: ${{ needs.ref.outputs.refspec }}
           fetch-depth: 0
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+      - name: Configure 1Password Service Account
+        uses: 1password/load-secrets-action/configure@v1
+        with:
+          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
       - name: Load secret
         id: op-load-secret
         uses: 1password/load-secrets-action@v1
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/AWS_SECRET_ACCESS_KEY
-          PULUMI_ACCESS_TOKEN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/service/PULUMI_ACCESS_TOKEN
-          ROUTE_53_DOMAIN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/service/ROUTE_53_DOMAIN
-          SCROLL_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/service/SCROLL_SECRETS_ARN
-          VC_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/service/VC_SECRETS_ARN
+          AWS_ACCESS_KEY_ID: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/AWS_SECRET_ACCESS_KEY
+          PULUMI_ACCESS_TOKEN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-secrets/ci/PULUMI_ACCESS_TOKEN
+          ROUTE_53_DOMAIN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/ci/ROUTE_53_DOMAIN
+          SCROLL_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/ci/SCROLL_SECRETS_ARN
+          VC_SECRETS_ARN: op://DevOps/passport-scroll-badge-service-${{ inputs.environment }}-env/ci/VC_SECRETS_ARN
       - name: Prepare to Deploy to AWS
         uses: ./.github/actions/prepare_deploy_to_aws
       - name: Deploy Review
