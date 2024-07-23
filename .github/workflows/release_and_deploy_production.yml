@@ -40,27 +40,27 @@ jobs:
           commit: ${{ needs.ref.outputs.refspec }}
           draft: true
 
-  # deploy-staging:
-  #   name: Deploy to Staging
-  #   needs: [create-draft-release]
-  #   uses: ./.github/workflows/build_and_deploy_generic.yml
-  #   with:
-  #     commit: ${{ inputs.commit }}
-  #     environment: staging
-  #   secrets: inherit
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [create-draft-release]
+    uses: ./.github/workflows/build_and_deploy_generic.yml
+    with:
+      commit: ${{ inputs.commit }}
+      environment: staging
+    secrets: inherit
 
-  # deploy-production:
-  #   name: Deploy to Production
-  #   needs: [deploy-staging]
-  #   uses: ./.github/workflows/build_and_deploy_generic.yml
-  #   with:
-  #     commit: ${{ inputs.commit }}
-  #     environment: production
-  #   secrets: inherit
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-staging]
+    uses: ./.github/workflows/build_and_deploy_generic.yml
+    with:
+      commit: ${{ inputs.commit }}
+      environment: production
+    secrets: inherit
 
   release:
     name: Release
-    needs: [create-draft-release, ref]
+    needs: [ref, create-draft-release, deploy-production]
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
