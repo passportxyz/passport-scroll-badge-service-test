@@ -59,7 +59,7 @@ jobs:
 
   release:
     name: Release
-    needs: [ref]
+    needs: [create-draft-release, ref]
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
