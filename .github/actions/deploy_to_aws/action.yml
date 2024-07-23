@@ -10,17 +10,18 @@ inputs:
   aws_region:
     required: true
     type: string
+  pulumi_command:
+    type: string
+    default: up
+  pulumi_diff:
+    default: "false"
   PULUMI_ACCESS_TOKEN:
     required: true
   AWS_ACCESS_KEY_ID:
     required: true
   AWS_SECRET_ACCESS_KEY:
     required: true
-  ROUTE_53_DOMAIN:
-    required: true
-  SCROLL_SECRETS_ARN:
-    required: true
-  VC_SECRETS_ARN:
+  OP_SERVICE_ACCOUNT_TOKEN:
     required: true
 runs:
   using: composite
@@ -32,10 +33,11 @@ runs:
       working-directory: infra/aws
       env:
         PULUMI_ACCESS_TOKEN: ${{ inputs.PULUMI_ACCESS_TOKEN }}
-    - uses: pulumi/actions@v3
+    - uses: pulumi/actions@v5
       id: pulumi
       with:
-        command: up
+        command: ${{ inputs.pulumi_command }}
+        diff: ${{ inputs.pulumi_diff }}
         stack-name: ${{ inputs.stack_name }}
         upsert: false
         work-dir: infra/aws
@@ -45,6 +47,4 @@ runs:
         AWS_SECRET_ACCESS_KEY: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: ${{ inputs.aws_region }}
         SCROLL_BADGE_SERVICE_IMAGE_TAG: ${{ inputs.docker_tag }}
-        ROUTE_53_DOMAIN: ${{ inputs.ROUTE_53_DOMAIN }}
-        SCROLL_SECRETS_ARN: ${{ inputs.SCROLL_SECRETS_ARN }}
-        VC_SECRETS_ARN: ${{ inputs.VC_SECRETS_ARN }}
+        OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.OP_SERVICE_ACCOUNT_TOKEN }}
